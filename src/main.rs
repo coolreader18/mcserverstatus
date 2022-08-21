@@ -6,7 +6,7 @@ use std::process::{ExitCode, Termination};
 use std::time::Duration;
 
 use anyhow::Context;
-use clap::{ArgGroup, Parser};
+use clap::{AppSettings, ArgGroup, Parser};
 use dialoguer::{theme::ColorfulTheme, Select};
 use itertools::Itertools;
 use serde::Deserialize;
@@ -31,20 +31,22 @@ impl ToString for Server {
 }
 
 #[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+#[clap(setting(AppSettings::DeriveDisplayOrder))]
 #[clap(group(
     ArgGroup::new("server-choice").args(&["instance", "server", "servers-file"])
 ))]
 struct Args {
     /// Path to the folder for your minecraft instance [default: the standard .minecraft folder]
-    #[clap(parse(from_os_str))]
+    #[clap(short, long, parse(from_os_str))]
     instance: Option<PathBuf>,
 
     /// IP for the minecraft server to query
-    #[clap(long)]
+    #[clap(short, long)]
     server: Option<String>,
 
     /// Path to the servers.dat file you want to choose a server from.
-    #[clap(long, parse(from_os_str))]
+    #[clap(short = 'f', long, parse(from_os_str))]
     servers_file: Option<PathBuf>,
 
     /// Connection timeout in seconds

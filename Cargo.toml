@@ -1,6 +1,10 @@
 [package]
 name = "mcserverstatus"
 version = "0.1.0"
+license = "MIT"
+repository = "https://github.com/coolreader18/mcserverstatus"
+authors = ["Noa <coolreader18@gmail.com>"]
+description = "Check who's online before you open up your minecraft client."
 edition = "2021"
 
 [dependencies]
