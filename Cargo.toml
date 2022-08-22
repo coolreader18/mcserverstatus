@@ -1,6 +1,6 @@
 [package]
 name = "mcserverstatus"
-version = "0.1.0"
+version = "0.1.1"
 license = "MIT"
 repository = "https://github.com/coolreader18/mcserverstatus"
 authors = ["Noa <coolreader18@gmail.com>"]
