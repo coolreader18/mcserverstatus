@@ -154,7 +154,7 @@ async fn app(term: &console::Term) -> anyhow::Result<()> {
     }
 
     let spinner = &indicatif::ProgressBar::new_spinner();
-    spinner.set_draw_target(indicatif::ProgressDrawTarget::term(term.clone(), Some(15)));
+    spinner.set_draw_target(indicatif::ProgressDrawTarget::term(term.clone(), 15));
 
     let (online, max, players) = spin(&spinner, async move {
         spinner.set_message("Connecting...");
