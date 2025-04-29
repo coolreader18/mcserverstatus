@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fs::File;
 use std::future::Future;
 use std::io::{self, BufReader};
@@ -6,7 +7,7 @@ use std::process::{ExitCode, Termination};
 use std::time::Duration;
 
 use anyhow::Context;
-use clap::{AppSettings, ArgGroup, Parser};
+use clap::{ArgGroup, Parser};
 use dialoguer::{theme::ColorfulTheme, Select};
 use itertools::Itertools;
 use serde::Deserialize;
@@ -24,29 +25,28 @@ struct Server {
     name: String,
 }
 
-impl ToString for Server {
-    fn to_string(&self) -> String {
-        format!("{} (ip: {})", self.name, self.ip)
+impl fmt::Display for Server {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} (address: {})", self.name, self.ip)
     }
 }
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
-#[clap(setting(AppSettings::DeriveDisplayOrder))]
 #[clap(group(
-    ArgGroup::new("server-choice").args(&["instance", "server", "servers-file"])
+    ArgGroup::new("server-choice").args(&["instance", "server", "servers_file"])
 ))]
 struct Args {
     /// Path to the folder for your minecraft instance [default: the standard .minecraft folder]
-    #[clap(short, long, parse(from_os_str))]
+    #[clap(short, long)]
     instance: Option<PathBuf>,
 
-    /// IP for the minecraft server to query
+    /// IP/domain of the minecraft server to query
     #[clap(short, long)]
     server: Option<String>,
 
     /// Path to the servers.dat file you want to choose a server from.
-    #[clap(short = 'f', long, parse(from_os_str))]
+    #[clap(short = 'f', long)]
     servers_file: Option<PathBuf>,
 
     /// Connection timeout in seconds
@@ -55,23 +55,23 @@ struct Args {
 }
 
 fn get_minecraft_dir() -> anyhow::Result<PathBuf> {
-    let mc_dir = if cfg!(any(windows, target_os = "macos")) {
+    let base_dir = if cfg!(any(windows, target_os = "macos")) {
         dirs_next::data_dir()
     } else {
         dirs_next::home_dir()
     };
-    let mc_dir = mc_dir.and_then(|mut mc_dir| {
-        mc_dir.push(if cfg!(target_os = "macos") {
-            "minecraft"
-        } else {
-            ".minecraft"
-        });
-        mc_dir.is_dir().then(|| mc_dir)
-    });
-    mc_dir.context(
-        "Couldn't resolve .minecraft directory, please check \
-         that it exists or pass the path explicitly.",
-    )
+    let dir_name = if cfg!(target_os = "macos") {
+        "minecraft"
+    } else {
+        ".minecraft"
+    };
+    base_dir
+        .map(|dir| dir.join(dir_name))
+        .filter(|dir| dir.is_dir())
+        .context(
+            "Couldn't resolve .minecraft directory, please check that \
+             it exists or pass the path explicitly with --instance.",
+        )
 }
 
 #[tokio::main]
@@ -116,7 +116,10 @@ async fn app(term: &console::Term) -> anyhow::Result<()> {
                 path
             };
 
-            let dat: ServersDat = nbt::from_reader(BufReader::new(File::open(servers_path)?))?;
+            let file = File::open(&servers_path).with_context(|| {
+                format!("could not open servers file at {}", servers_path.display())
+            })?;
+            let dat: ServersDat = nbt::from_reader(BufReader::new(file))?;
 
             let theme = ColorfulTheme::default();
             let selection = Select::with_theme(&theme)
@@ -126,7 +129,7 @@ async fn app(term: &console::Term) -> anyhow::Result<()> {
                 .interact_on(&term);
 
             let selection = match selection {
-                Err(e) if e.kind() == io::ErrorKind::Interrupted => {
+                Err(dialoguer::Error::IO(e)) if e.kind() == io::ErrorKind::Interrupted => {
                     anyhow::bail!(CtrlC)
                 }
                 x => x?,
@@ -156,7 +159,7 @@ async fn app(term: &console::Term) -> anyhow::Result<()> {
     let spinner = &indicatif::ProgressBar::new_spinner();
     spinner.set_draw_target(indicatif::ProgressDrawTarget::term(term.clone(), 15));
 
-    let (online, max, players) = spin(&spinner, async move {
+    let (online, max, players) = spin(spinner, async move {
         spinner.set_message("Connecting...");
         let conn = ping_conf.connect().await?;
         spinner.set_message("Fetching status...");

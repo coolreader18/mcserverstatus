@@ -10,14 +10,14 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.57"
 async-minecraft-ping = "0.8.0"
-clap = { version = "3.1.18", features = ["derive"] }
+clap = { version = "4", features = ["derive"] }
 console = { version = "0.15.0", default-features = false }
-dialoguer = { version = "0.10.1", default-features = false }
+dialoguer = { version = "0.11", default-features = false }
 dirs-next = "2.0.0"
 hematite-nbt = "0.5.2"
 indicatif = "0.17.0"
-itertools = "0.10.3"
+itertools = "0.14"
 serde = { version = "1.0.137", features = ["derive"] }
-textwrap = { version = "0.15.0", default-features = false }
-thiserror = "1.0.31"
+textwrap = { version = "0.16.0", default-features = false }
+thiserror = "2"
 tokio = { version = "1.18.2", features = ["rt-multi-thread", "macros", "signal"] }
